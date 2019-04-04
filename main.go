@@ -78,6 +78,13 @@ func main() {
 	}
 	defer t.Cacher.Close()
 
+	traceFlush, err := newTracer(t.Config.Tracing, t.Logger)
+	if err != nil {
+		level.Error(t.Logger).Log("event", "Unable to initialize tracing", "detail", err)
+		os.Exit(1)
+	}
+	defer traceFlush()
+
 	router := mux.NewRouter()
 
 	// Health Check Paths
@@ -100,7 +107,7 @@ func main() {
 	level.Info(t.Logger).Log("event", "proxy http endpoint starting", "address", t.Config.ProxyServer.ListenAddress, "port", t.Config.ProxyServer.ListenPort)
 
 	// Start the Server
-	err := http.ListenAndServe(fmt.Sprintf("%s:%d", t.Config.ProxyServer.ListenAddress, t.Config.ProxyServer.ListenPort), handlers.CompressHandler(router))
+	err = http.ListenAndServe(fmt.Sprintf("%s:%d", t.Config.ProxyServer.ListenAddress, t.Config.ProxyServer.ListenPort), handlers.CompressHandler(router))
 	level.Error(t.Logger).Log("event", "exiting", "err", err)
 }
 

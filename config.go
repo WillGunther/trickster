@@ -25,6 +25,7 @@ type Config struct {
 	Profiler         ProfilerConfig                    `toml:"profiler"`
 	Origins          map[string]PrometheusOriginConfig `toml:"origins"`
 	ProxyServer      ProxyServerConfig                 `toml:"proxy_server"`
+	Tracing          TracingConfig                     `toml:"tracing"`
 }
 
 // GeneralConfig is a collection of general configuration values.
@@ -119,6 +120,44 @@ type LoggingConfig struct {
 	LogLevel string `toml:"log_level"`
 }
 
+// TracingConfig is a collection of Tracing configurations
+type TracingConfig struct {
+	// SamplerType specifies the OpenCensus Sampler type.
+	// The options are Always, Never, and Probability
+	// For more details see:
+	// https://godoc.org/go.opencensus.io/trace#Sampler
+	SamplerType string `toml:"sampler_type`
+	// SamplerFraction specifies the Opencensus probability of sampling.
+	// This is only used if SamplerType is Probability
+	SamplerFraction float64 `toml:"sampler_fraction"`
+	// Exporter specifies the OpenCensus exporter. The options are
+	// Jaeger or None.
+	Exporter string       `toml:"exporter"`
+	Jaeger   JaegerConfig `toml:"jaeger"`
+}
+
+// JaegerConfig is a collection of Jaeger exporting configurations
+// For more information see:
+// https://godoc.org/go.opencensus.io/exporter/jaeger#Options
+type JaegerConfig struct {
+	// AgentEndpoint instructs exporter to send spans to jaeger-agent at this address.
+	AgentEndpoint string `toml:"agent_endpoint"`
+	// CollectorEndpoint is the full url to the Jaeger HTTP Thrift collector.
+	CollectorEndpoint string `toml:"collector_endpoint"`
+	// Username to be used if basic auth is required.
+	// Optional.
+	Username string `toml:"username"`
+	// Password to be used if basic auth is required.
+	// Optional.
+	Password string `toml:"password"`
+	// Process contains the information about the exporting process.
+	Process string `toml:"process"`
+	// BufferMaxCount defines the total number of traces that can be buffered in memory
+	BufferMaxCount int
+	// Tags are key value pairs to be added to the spans
+	Tags map[string]string `toml:"tags"`
+}
+
 // NewConfig returns a Config initialized with default values.
 func NewConfig() *Config {
 
@@ -158,6 +197,17 @@ func NewConfig() *Config {
 		},
 		ProxyServer: ProxyServerConfig{
 			ListenPort: 9090,
+		},
+		Tracing: TracingConfig{
+			SamplerType: "Never",
+			Exporter:    "None",
+			Jaeger: JaegerConfig{
+				AgentEndpoint: "localhost:6831",
+				// If collector endpoint is specified OpenCensus defaults to
+				// the collector and not the agent.
+				CollectorEndpoint: "",
+				Process:           "trickster",
+			},
 		},
 	}
 }
